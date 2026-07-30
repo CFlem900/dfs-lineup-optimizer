@@ -1,0 +1,85 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+backend/env/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# Environment
+.env
+.env.local
+backend/.env
+frontend/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data
+backend/data/*.db
+backend/data/*.sqlite
+backend/logs/*.log
+backend/cache/
+
+# Coverage
+coverage/
+*.cover
+
+# Benchmarks
+benchmark_results.json
+
+# ── Public-release additions (2026-07-30 sanitization) ──────────────
+# Secrets
+backend/dk_cookie.txt
+*cookie*
+*.pem
+*.pfx
+*.p12
+*.key
+# Logs (the *.log rule above misses .txt-named logs)
+server_log*.txt
+log*.txt
+logfile.txt
+backend*.log
+# Real data / DBs / dumps
+*.db
+*.sqlite
+*.sqlite3
+*.parquet
+dg*.json
+gen_*.json
+gen*.json
+pool_*.json
+tmp_pool.json
+*_lineups.json
+v*_test.json
+slates.json
+backend/pool_api_result.json
+*.mps
+*.mst
+*.sol
+# Scratch / caches
+*.bak
+*.tmp
+*.patch
+.mypy_cache/
+.ruff_cache/
+*.tsbuildinfo

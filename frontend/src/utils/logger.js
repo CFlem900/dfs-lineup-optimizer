@@ -1,0 +1,9 @@
+const isDev = import.meta.env.DEV
+
+export const devLog = (...args) => {
+  if (isDev) console.log(...args)
+}
+
+export const devWarn = (...args) => {
+  if (isDev) console.warn(...args)
+}

@@ -46,7 +46,7 @@ coverage/
 # Benchmarks
 benchmark_results.json
 
-# ── Public-release additions (2026-07-30 sanitization) ──────────────
+# ── Additional exclusions ─────────────────────────────────────────────
 # Secrets
 backend/dk_cookie.txt
 *cookie*

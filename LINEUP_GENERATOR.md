@@ -17,7 +17,7 @@ The system supports **NBA** (classic + showdown) and **CBB** (college basketball
 └───────────────────────────┬─────────────────────────────────────┘
                             │
 ┌───────────────────────────▼─────────────────────────────────────┐
-│              LineupOptimizerService (5,689 lines)                │
+│              LineupOptimizerService                                │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────────────┐  │
 │  │ Pool     │→ │ Enrich   │→ │ Optimize │→ │ Select + Grade │  │
 │  │ Building │  │ (3-tier) │  │ (ILP +   │  │ (Diversity +   │  │
@@ -27,7 +27,7 @@ The system supports **NBA** (classic + showdown) and **CBB** (college basketball
          │             │              │
 ┌────────▼──┐  ┌───────▼────┐  ┌──────▼───────┐
 │ Data Layer│  │ AI Agents  │  │ Solver Layer │
-│           │  │ (14 total) │  │              │
+│           │  │ (13 total) │  │              │
 │ Rotation  │  │ Ownership  │  │ PuLP/CBC ILP │
 │ Engine    │  │ Strategy   │  │ Greedy+Swap  │
 │ DFS Svc   │  │ News       │  │ Portfolio    │
@@ -384,22 +384,23 @@ Bridges tournament analysis / backtesting feedback into the optimizer:
 
 ## AI Agent Integration
 
-The optimizer integrates with 14 AI agents, all optional (graceful degradation when unavailable):
+The optimizer integrates with 13 AI agents, all optional (graceful degradation when unavailable):
 
 | # | Agent | Tier | Purpose | Impact |
 |---|-------|------|---------|--------|
+| 1 | SignalAnalysisAgent | fast | NLP understanding of expert tweets/articles (sarcasm, conditionals, stat predictions) | Expert signal classification |
 | 2 | LineupStrategyAgent | reasoning | Per-player score modifiers based on game theory | Multiplicative score adjustment |
 | 3 | InjuryImpactAgent | reasoning | Cascading injury effects (usage, pace, role changes) | Minutes + usage redistribution |
 | 4 | NewsProjectionAgent | fast | Extract projection adjustments from news headlines | Minutes/usage overrides |
-| 6 | CoachLearningAgent | reasoning | Coach rotation tendencies and preferences | Minutes adjustment |
-| 7 | OwnershipAgent | fast | Field ownership projection for top 50 players | Ownership leverage scoring |
-| 8 | SimulationTuningAgent | fast | Per-player noise profiles for Monte Carlo | Simulation variance tuning |
-| 9 | NarrativeAgent | reasoning | Natural language lineup analysis | Streaming narrative output |
-| 10 | ExpertQualityAgent | fast | Expert signal quality assessment | Signal weighting |
-| 11 | BacktestingAgent | reasoning | Historical accuracy analysis | Calibration inputs |
-| 12 | TournamentAnalysisAgent | reasoning | Winning lineup pattern analysis | Calibration inputs |
-| 13 | ChatAgent | reasoning | Interactive Q&A about lineups | User-facing chat |
-| 14 | LineMovementAgent | fast | Vegas line movement analysis | Game context enrichment |
+| 5 | CoachLearningAgent | reasoning | Coach rotation tendencies and preferences | Minutes adjustment |
+| 6 | OwnershipAgent | fast | Field ownership projection for top 50 players | Ownership leverage scoring |
+| 7 | SimulationTuningAgent | fast | Per-player noise profiles for Monte Carlo | Simulation variance tuning |
+| 8 | NarrativeAgent | reasoning | Natural language lineup analysis | Streaming narrative output |
+| 9 | ExpertQualityAgent | fast | Expert signal quality assessment | Signal weighting |
+| 10 | BacktestingAgent | reasoning | Historical accuracy analysis | Calibration inputs |
+| 11 | TournamentAnalysisAgent | reasoning | Winning lineup pattern analysis | Calibration inputs |
+| 12 | ChatAgent | reasoning | Interactive Q&A about lineups | User-facing chat |
+| 13 | LineMovementAgent | fast | Vegas line movement analysis | Game context enrichment |
 
 All agents follow the pattern: `__init__(ai_service, cache_service=None)`, `.is_available` property, main analysis method returning `Optional[PydanticModel]`.
 
@@ -465,7 +466,7 @@ recent_weight: float (0.0-0.6, override recent vs season blend)
 
 ## Key Constants
 
-All constants defined in `backend/app/config/constants.py` (793 lines):
+All constants defined in `backend/app/config/constants.py`:
 
 ### Minutes Projection
 - `BASELINE_SEASON_WEIGHT`: 0.75 (season average anchor)
@@ -498,7 +499,7 @@ All constants defined in `backend/app/config/constants.py` (793 lines):
 
 | File | Lines | Role |
 |------|-------|------|
-| `services/lineup_optimizer_service.py` | 5,689 | Core optimizer: pool building, enrichment, ILP/greedy solve, multi-lineup, stacking, quality grading |
+| `services/lineup_optimizer_service.py` | — | Core optimizer: pool building, enrichment, ILP/greedy solve, multi-lineup, stacking, quality grading |
 | `services/dfs_service.py` | ~600 | Fantasy point projections: per-minute rates, DvP, pace, DD/TD probabilities, shot decomposition |
 | `services/rotation_engine.py` | ~1,200 | Minutes projections: EMA baselines, injury redistribution, B2B, blowout, rest, competitive context |
 | `services/simulation_engine.py` | ~700 | Monte Carlo: vectorized NumPy, stat correlations, game scripts, percentile distributions |
@@ -506,9 +507,9 @@ All constants defined in `backend/app/config/constants.py` (793 lines):
 | `models/lineup.py` | ~300 | Pydantic models: PlayerPoolEntry (54 fields), OptimizeRequest, MultiLineupRequest, OptimizedLineup |
 | `models/player.py` | ~112 | PlayerMinutes (with per-min stat rates, shooting profile), PlayerProjection |
 | `models/simulation.py` | ~150 | SimulationConfig, GameSimResult, PlayerSimResult |
-| `config/constants.py` | 793 | All tunable constants for the entire system |
+| `config/constants.py` | — | All tunable constants for the entire system |
 | `api/routers/lineups.py` | ~400 | REST endpoints: pool, optimize, generate, analyze, refine, narrative stream |
-| `services/agents/` | 14 files | AI agents: ownership, strategy, news, sim tuning, injury impact, coach, narrative, etc. |
+| `services/agents/` | 13 files | AI agents: ownership, strategy, news, sim tuning, injury impact, coach, narrative, etc. |
 
 ---
 

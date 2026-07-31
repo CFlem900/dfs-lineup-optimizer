@@ -26,7 +26,7 @@ Vegas Lines (NBA Live)    -->
 
 ## 1. Minutes Projection: The Rotation Engine
 
-**File**: `backend/app/services/rotation_engine.py` (1322 lines)
+**File**: `backend/app/services/rotation_engine.py`
 
 The rotation engine is the foundation of the entire system. Every fantasy point projection starts with a minutes projection, because in the NBA, playing time is the single strongest predictor of fantasy output.
 

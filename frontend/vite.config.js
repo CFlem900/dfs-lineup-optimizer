@@ -17,7 +17,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:8001',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         // Allow long-running requests (lineup generation can take 5min+ when stats.nba.com is slow)
         timeout: 600000, // 10 minutes

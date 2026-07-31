@@ -18,7 +18,7 @@ The system is designed to run autonomously on game day: a background pipeline po
 | Cache / Pub-Sub | Redis 7.4 (password-authenticated) |
 | Optimizer | PuLP (CBC Integer Linear Programming solver) |
 | Simulation | NumPy/SciPy vectorized Monte Carlo |
-| AI Agents | 14 LLM-powered agents (OpenAI + Anthropic Claude) |
+| AI Agents | 13 LLM-powered agents (OpenAI + Anthropic Claude) |
 | Job Scheduler | APScheduler (background cron + interval jobs) |
 | Browser Automation | Playwright (DraftKings entry management) |
 | Notifications | Email (SMTP) + SMS (Twilio) + Discord (REST Bot API) |
@@ -33,9 +33,9 @@ Prediction_App/
     app/
       api/routers/          19 FastAPI endpoint groups
       services/             76 specialized service modules
-      services/agents/      14 AI-powered analysis agents
+      services/agents/      13 AI-powered analysis agents
       db/models.py          23 SQLAlchemy ORM models
-      config/constants.py   1,400-line configuration (all tunable parameters)
+      config/constants.py   Central configuration (all tunable parameters) (all tunable parameters)
       models/               Pydantic request/response schemas
       main.py               FastAPI entrypoint + APScheduler lifespan
     alembic/versions/       12 database migrations
@@ -135,7 +135,7 @@ Rules-based aggregation combining salary tier, minutes projection, news signals,
 
 ## AI Agent System
 
-14 LLM-powered agents in `services/agents/`, each following the pattern `__init__(ai_service, cache_service=None)` with an `is_available` flag and a main analysis method returning `Optional[PydanticModel]`:
+13 LLM-powered agents in `services/agents/`, each following the pattern `__init__(ai_service, cache_service=None)` with an `is_available` flag and a main analysis method returning `Optional[PydanticModel]`:
 
 | # | Agent | Purpose |
 |---|-------|---------|
@@ -256,7 +256,7 @@ The frontend is a single-page React 18 application with TanStack Query for serve
 
 ---
 
-## Key Configuration (constants.py — 1,400 lines)
+## Key Configuration (constants.py)
 
 All tunable parameters are centralized in `backend/app/config/constants.py`:
 

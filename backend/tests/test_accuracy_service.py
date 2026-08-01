@@ -141,8 +141,13 @@ class TestGetAccuracySummary:
         mock_get_session.return_value = _mock_session([])
         svc = AccuracyService()
         result = await svc.get_accuracy_summary()
+        # Empty data now returns a fully-shaped zeroed summary (same schema
+        # as the populated path) instead of a bare {"records": 0, "message"} dict.
         assert result["records"] == 0
-        assert "message" in result
+        assert result["period_days"] == 30
+        assert result["minutes"] == {"mae": 0.0, "rmse": 0.0, "bias": 0.0, "samples": 0}
+        assert result["fantasy_points"] == {"mae": 0.0, "rmse": 0.0, "bias": 0.0, "samples": 0}
+        assert result["per_stat"] == {}
 
     @patch(f"{DB_MODULE}.get_session")
     @patch(f"{DB_MODULE}.is_db_available", return_value=True)

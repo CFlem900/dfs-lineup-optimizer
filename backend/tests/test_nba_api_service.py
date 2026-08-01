@@ -770,7 +770,13 @@ class TestTradeDetection:
     def test_trade_detection_graceful_when_static_lookup_fails(
         self, mock_roster, mock_game_log, mock_abbr, mock_usg, service
     ):
-        """If static player lookup fails, the existing rotation should be returned."""
+        """If static player lookup fails, a synthetic default entry is added.
+
+        Unknown DK draftables are no longer dropped: trade detection now
+        creates a position-default PlayerMinutes (synthetic id, empty game
+        logs, roster_change_detected=True) so high-ownership DK players
+        never fall out of the pool entirely.
+        """
         mock_roster.return_value = [
             {"PLAYER_ID": 1, "PLAYER": "Zach LaVine", "POSITION": "SG", "BIRTH_DATE": None},
         ]
@@ -789,10 +795,18 @@ class TestTradeDetection:
                     draftable_names={"Zach LaVine", "Unknown Player"},
                 )
 
-        # Should still have LaVine
-        assert len(rotation) == 1
-        assert rotation[0].player_name == "Zach LaVine"
-        assert rotation[0].roster_change_detected is False
+        # LaVine plus a synthetic fallback entry for the unknown player
+        assert len(rotation) == 2
+
+        lavine = next(p for p in rotation if p.player_name == "Zach LaVine")
+        assert lavine.roster_change_detected is False
+
+        unknown = next(p for p in rotation if p.player_name == "Unknown Player")
+        assert unknown.roster_change_detected is True
+        assert unknown.position == "G-F"  # safe default when DK gives no position
+        assert unknown.minutes_last_5 == []  # empty logs trigger sparse-data heuristic
+        assert unknown.minutes_last_10 == []
+        assert unknown.season_avg > 0  # position/salary-default minutes
 
 
 # ---------------------------------------------------------------------------

@@ -293,39 +293,42 @@ class TestCBBPropsCaching:
 
 
 class TestServiceContainerPropsRouting:
-    """get_props_service returns correct service by sport."""
+    """get_props_service returns correct service by sport.
 
-    def test_nba_returns_dk_props(self):
+    Routing is registry-backed: get_props_service resolves via the
+    ``_sport_services`` {sport: {role: service}} map (built by
+    ``_build_sport_service_map``), not hardcoded sport ternaries. Tests
+    seed that map directly so only the props services need to exist.
+    """
+
+    @staticmethod
+    def _make_container():
         from app.api.dependencies import ServiceContainer
 
         container = ServiceContainer()
-        container._initialised = True
-        container.dk_props_service = DKPropsService()
-        container.cbb_props_service = CBBPropsService()
+        container._initialised = True  # skip full service init
+        container._sport_services = {
+            "nba": {"props": DKPropsService()},
+            "cbb": {"props": CBBPropsService()},
+        }
+        return container
+
+    def test_nba_returns_dk_props(self):
+        container = self._make_container()
 
         nba_svc = container.get_props_service("nba")
         assert isinstance(nba_svc, DKPropsService)
         assert nba_svc._event_group_id == NBA_EVENT_GROUP_ID
 
     def test_cbb_returns_cbb_props(self):
-        from app.api.dependencies import ServiceContainer
-
-        container = ServiceContainer()
-        container._initialised = True
-        container.dk_props_service = DKPropsService()
-        container.cbb_props_service = CBBPropsService()
+        container = self._make_container()
 
         cbb_svc = container.get_props_service("cbb")
         assert isinstance(cbb_svc, CBBPropsService)
         assert cbb_svc._event_group_id == CBB_EVENT_GROUP_ID
 
     def test_default_returns_nba(self):
-        from app.api.dependencies import ServiceContainer
-
-        container = ServiceContainer()
-        container._initialised = True
-        container.dk_props_service = DKPropsService()
-        container.cbb_props_service = CBBPropsService()
+        container = self._make_container()
 
         default_svc = container.get_props_service()
         assert default_svc._event_group_id == NBA_EVENT_GROUP_ID

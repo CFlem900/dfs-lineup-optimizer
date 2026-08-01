@@ -1395,13 +1395,23 @@ class TestPhase5CacheSafety:
 
 
 class TestPhase5LateSwapSport:
-    """Verify sport parameter exists on all late-swap endpoints."""
+    """Verify sport is available on all late-swap endpoints.
+
+    The POST endpoints now carry sport in the JSON request body
+    (LateSwapRequest.sport / LateSwapMonitorRequest.sport) rather than
+    as a query param; the GET monitor endpoint still uses a query param.
+    """
 
     def test_late_swap_has_sport_param(self):
+        """Sport travels in the request body (LateSwapRequest.sport)."""
         import inspect
         from app.api.routers.lineups import late_swap
+        from app.models.lineup import LateSwapRequest
         sig = inspect.signature(late_swap)
-        assert "sport" in sig.parameters
+        assert "sport" not in sig.parameters  # moved into the body model
+        assert sig.parameters["request"].annotation is LateSwapRequest
+        assert "sport" in LateSwapRequest.model_fields
+        assert LateSwapRequest.model_fields["sport"].default == "nba"
 
     def test_late_swap_monitor_has_sport_param(self):
         import inspect
@@ -1410,10 +1420,15 @@ class TestPhase5LateSwapSport:
         assert "sport" in sig.parameters
 
     def test_late_swap_monitor_full_has_sport_param(self):
+        """Sport travels in the request body (LateSwapMonitorRequest.sport)."""
         import inspect
         from app.api.routers.lineups import late_swap_monitor_full
+        from app.models.lineup import LateSwapMonitorRequest
         sig = inspect.signature(late_swap_monitor_full)
-        assert "sport" in sig.parameters
+        assert "sport" not in sig.parameters  # moved into the body model
+        assert sig.parameters["request"].annotation is LateSwapMonitorRequest
+        assert "sport" in LateSwapMonitorRequest.model_fields
+        assert LateSwapMonitorRequest.model_fields["sport"].default == "nba"
 
 
 class TestPhase5LineupAnalysisCBB:

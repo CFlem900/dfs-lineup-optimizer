@@ -191,46 +191,66 @@ class TestBlowoutAdjustment:
             assert "Blowout" not in (projections[pid].reason or "")
 
     def test_blowout_capped_at_90_percent(self, engine, full_rotation):
-        """Even extreme spreads should cap the factor at 0.90."""
+        """Blowout minute reductions have two regimes:
+
+        1. |spread| < 13 (guillotine off): the non-linear soft penalty
+           applies, floored at BLOWOUT_MIN_FACTOR (0.90) — no starter
+           can lose more than 10% of baseline minutes.
+        2. |spread| >= 13: the "4Q point spread guillotine" hard-caps
+           starters at 28 minutes, deliberately overriding the 0.90
+           floor for high-minute starters (coaches sit them in Q4).
+        """
         from app.models.game import GameInfo, TeamGameStats
 
-        extreme_blowout = GameInfo(
-            game_id="extreme",
-            game_date="2026-02-09",
-            game_status="Scheduled",
-            home_team=TeamGameStats(
-                team_id=1, team_name="H", team_abbreviation="HOM",
-                season_pace=101.0, season_off_rating=130.0,
-                season_def_rating=100.0, season_ppg=130.0,
-                season_opp_ppg=100.0, last_5_ppg=130.0,
-            ),
-            away_team=TeamGameStats(
-                team_id=2, team_name="A", team_abbreviation="AWY",
-                season_pace=101.0, season_off_rating=100.0,
-                season_def_rating=130.0, season_ppg=100.0,
-                season_opp_ppg=130.0, last_5_ppg=100.0,
-            ),
-            projected_total=230.0, projected_home_score=130.0,
-            projected_away_score=100.0, projected_spread=-20.0,
-            projected_pace=101.0, pace_label="Average",
-        )
+        def _blowout_game(spread: float) -> GameInfo:
+            return GameInfo(
+                game_id=f"blowout_{spread:.0f}",
+                game_date="2026-02-09",
+                game_status="Scheduled",
+                home_team=TeamGameStats(
+                    team_id=1, team_name="H", team_abbreviation="HOM",
+                    season_pace=101.0, season_off_rating=130.0,
+                    season_def_rating=100.0, season_ppg=130.0,
+                    season_opp_ppg=100.0, last_5_ppg=130.0,
+                ),
+                away_team=TeamGameStats(
+                    team_id=2, team_name="A", team_abbreviation="AWY",
+                    season_pace=101.0, season_off_rating=100.0,
+                    season_def_rating=130.0, season_ppg=100.0,
+                    season_opp_ppg=130.0, last_5_ppg=100.0,
+                ),
+                projected_total=230.0, projected_home_score=130.0,
+                projected_away_score=100.0, projected_spread=-spread,
+                projected_pace=101.0, pace_label="Average",
+            )
 
+        # ── Regime 1: spread=12 (below the 13-pt guillotine) ──
+        # Soft penalty only: every starter keeps >= 90% of baseline.
         projections = self._build_projections(full_rotation)
-        star_before = projections[100].adjusted_minutes
-
         engine.apply_game_context_adjustments(
-            projections, full_rotation, extreme_blowout, team_id=1
+            projections, full_rotation, _blowout_game(12.0), team_id=1
         )
-
-        # With non-linear curve + star dampening, the star player's
-        # factor won't hit the 0.90 floor as easily.  Verify:
-        # 1. The star player lost minutes (blowout applied)
-        # 2. The factor didn't exceed the 0.90 floor for any player
-        assert projections[100].adjusted_minutes < star_before
         for p in projections.values():
             if p.baseline_minutes >= 24.0:
-                # No starter should lose more than 10% (0.90 floor)
+                assert p.adjusted_minutes < p.baseline_minutes
                 assert p.adjusted_minutes >= round(p.baseline_minutes * 0.90, 1) - 0.1
+                assert "Guillotine" not in (p.reason or "")
+
+        # ── Regime 2: spread=20 (extreme) — guillotine engages ──
+        # Starters above 28 min are hard-capped at exactly 28.0, which
+        # for the 35-min star is BELOW the 0.90 soft floor by design.
+        projections = self._build_projections(full_rotation)
+        star_before = projections[100].adjusted_minutes  # 35.0
+        engine.apply_game_context_adjustments(
+            projections, full_rotation, _blowout_game(20.0), team_id=1
+        )
+        assert projections[100].adjusted_minutes == 28.0
+        assert projections[100].adjusted_minutes < star_before
+        assert "4Q Guillotine" in projections[100].reason
+        for p in projections.values():
+            if p.baseline_minutes >= 24.0:
+                # No starter plays above the 28-min extreme-blowout cap
+                assert p.adjusted_minutes <= 28.0
 
 
 # ============================================================================

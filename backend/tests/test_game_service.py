@@ -271,6 +271,9 @@ def _make_game_service_with_data_service(mock_data_service):
     svc._dk_slate_service.get_slates.return_value = []
     svc._db_cache = None
     svc._data_service = mock_data_service
+    svc._bdl = None            # BDL odds fallback disabled in tests
+    svc._odds_service = None   # The Odds API fallback disabled in tests
+    svc._odds_fetcher = None   # unified OddsFetcherService not wired → legacy odds chain
     svc._last_5_cache = {}
     return svc
 
@@ -317,10 +320,11 @@ class TestGameServiceBDLIntegration:
         assert svc.has_game_on_date(BOS_ID, "2026-02-24") is False
 
     def test_has_game_on_date_data_service_failure_falls_back(self):
-        """Falls back to ScoreboardV2 when data_service fails."""
+        """ScoreboardV2 fallback when data_service fails is gated by
+        settings.skip_nba_api_live (default True → fail closed, no
+        stats.nba.com call; False → fallback engages)."""
         mock_ds = MagicMock()
         mock_ds.get_scoreboard_for_date.side_effect = Exception("BDL down")
-        svc = _make_game_service_with_data_service(mock_ds)
 
         with patch(
             "app.services.game_service.scoreboardv2.ScoreboardV2"
@@ -330,12 +334,24 @@ class TestGameServiceBDLIntegration:
                     {"HOME_TEAM_ID": self.CHI_ID, "VISITOR_TEAM_ID": self.ATL_ID}
                 ]
             }
-            assert svc.has_game_on_date(self.CHI_ID, "2026-02-24") is True
+
+            # Default config (skip_nba_api_live=True): stats.nba.com is
+            # never called from a user-facing path — check fails closed.
+            svc = _make_game_service_with_data_service(mock_ds)
+            assert svc.has_game_on_date(self.CHI_ID, "2026-02-24") is False
+            mock_sb.assert_not_called()
+
+            # With stats.nba.com enabled, ScoreboardV2 fallback engages.
+            svc2 = _make_game_service_with_data_service(mock_ds)
+            with patch(
+                "app.services.game_service.settings.skip_nba_api_live", False
+            ):
+                assert svc2.has_game_on_date(self.CHI_ID, "2026-02-24") is True
 
     def test_has_game_on_date_no_data_service(self):
-        """Without _data_service, goes directly to ScoreboardV2."""
-        svc = _make_game_service_with_data_service(None)
-
+        """Without _data_service, ScoreboardV2 is used only when
+        stats.nba.com is enabled (skip_nba_api_live=False); the default
+        config fails closed without calling it."""
         with patch(
             "app.services.game_service.scoreboardv2.ScoreboardV2"
         ) as mock_sb:
@@ -344,7 +360,18 @@ class TestGameServiceBDLIntegration:
                     {"HOME_TEAM_ID": self.CHI_ID, "VISITOR_TEAM_ID": self.ATL_ID}
                 ]
             }
-            assert svc.has_game_on_date(self.CHI_ID, "2026-02-24") is True
+
+            # Default config: no data service AND no stats.nba.com → False.
+            svc = _make_game_service_with_data_service(None)
+            assert svc.has_game_on_date(self.CHI_ID, "2026-02-24") is False
+            mock_sb.assert_not_called()
+
+            # stats.nba.com enabled → goes directly to ScoreboardV2.
+            svc2 = _make_game_service_with_data_service(None)
+            with patch(
+                "app.services.game_service.settings.skip_nba_api_live", False
+            ):
+                assert svc2.has_game_on_date(self.CHI_ID, "2026-02-24") is True
 
     def test_all_star_filter_bdl_source(self):
         """BDL-sourced games with non-franchise team IDs are filtered."""

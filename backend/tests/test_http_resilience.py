@@ -264,11 +264,13 @@ class TestResilientGet:
 
     @patch("app.services.http_resilience.httpx.get")
     def test_exhausts_retries_on_persistent_timeout(self, mock_get):
-        """After 3 timeout failures, raises TimeoutException."""
+        """After exhausting all retry attempts on timeouts, raises TimeoutException."""
         mock_get.side_effect = httpx.TimeoutException("always timeout")
         with pytest.raises(httpx.TimeoutException):
             resilient_get("https://example.com", group=APIGroup.DRAFTKINGS)
-        assert mock_get.call_count == 3  # max_retries=3
+        # DraftKings max_retries was raised 3 -> 4 for transient errors
+        # (see _API_CONFIG in app/services/http_resilience.py).
+        assert mock_get.call_count == 4  # max_retries=4
 
     @patch("app.services.http_resilience.httpx.get")
     def test_circuit_breaker_blocks_when_open(self, mock_get):

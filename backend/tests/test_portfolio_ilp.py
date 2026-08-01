@@ -231,7 +231,7 @@ class TestPortfolioILPConstants:
             PORTFOLIO_ILP_MIN_EXPO_PENALTY,
         )
         assert PORTFOLIO_ILP_MAX_CANDIDATES == 550   # raised for oversampling (500 candidates)
-        assert PORTFOLIO_ILP_SOLVER_TIMEOUT == 45    # raised for oversampling pool
+        assert PORTFOLIO_ILP_SOLVER_TIMEOUT == 75    # raised from 45 — early incumbents at 45s on 500-candidate pools
         assert PORTFOLIO_ILP_MIN_LINEUPS == 5
         assert PORTFOLIO_ILP_DIVERSITY_PENALTY == 0.02
         assert PORTFOLIO_ILP_MIN_EXPO_PENALTY == 1000.0

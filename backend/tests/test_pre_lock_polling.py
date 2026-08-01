@@ -326,6 +326,7 @@ class TestGetStatus:
             "running", "active_window", "poll_count", "last_poll_at",
             "minutes_to_nearest_lock", "slate_schedule",
             "last_injury_hash_changed", "last_news_changed", "recent_errors",
+            "auto_swap",
         }
         assert set(status.keys()) == expected_keys
 

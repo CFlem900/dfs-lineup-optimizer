@@ -478,7 +478,17 @@ class TestHierarchicalRedistribution:
         assert pg_gain_from_pg_node > 0, "Backup PG should gain from PG node"
 
     def test_no_candidates_overflow_carries(self):
-        """No players at target pos → pool carries to next DAG node."""
+        """No players at target pos → overflow carries via bounded recursive spill.
+
+        PF cascade: [("PF", 0.70), ("SF", 0.20), ("C", 0.10)] — with no
+        PF/SF/C on the roster the whole 25-min pool overflows. The
+        recursive overflow cascade (one level deep) then routes it
+        through each target's OWN cascade: SF's cascade includes an SG
+        node at 10%, so guards absorb only 25 x 0.10 = 2.5 min (split
+        65/35 exact-match SG / family-match PG). The remaining ~22.5 min
+        must stay unallocated (absorbed later by 240-min normalization),
+        NOT dumped wholesale onto off-family players.
+        """
         # PF injured, but no SF or C on roster — only PG and SG
         injured = _make_player_minutes(1, position="PF", season_avg=25.0)
         pg = _make_player_minutes(2, position="PG", season_avg=28.0)
@@ -501,11 +511,20 @@ class TestHierarchicalRedistribution:
             all_reduced_ids={1},
         )
 
-        # PF cascade: [("PF", 0.70), ("SF", 0.20), ("C", 0.10)]
-        # No PF, SF, or C candidates → all overflow
-        # PG and SG should NOT receive minutes (different family)
-        assert result[2].adjusted_minutes == 28.0
-        assert result[3].adjusted_minutes == 22.0
+        pg_gain = result[2].adjusted_minutes - 28.0
+        sg_gain = result[3].adjusted_minutes - 22.0
+
+        # Guards absorb ONLY the bounded recursive spill (SG node = 10%
+        # of the pool), not the bulk of the freed minutes
+        assert pg_gain + sg_gain == pytest.approx(2.5, abs=0.15), \
+            f"Guards absorbed {pg_gain + sg_gain} min, expected only the 2.5-min recursive spill"
+
+        # Exact-match SG is the primary absorber (65%), family-match PG secondary (35%)
+        assert sg_gain > pg_gain > 0
+
+        # The bulk (~22.5 min) carries to normalization — off-family players
+        # never absorb it directly
+        assert pg_gain + sg_gain < 25.0 * 0.5
 
     def test_multiple_injuries_same_position(self):
         """Two PGs injured → both freed pools flow through DAG."""

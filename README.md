@@ -1,5 +1,7 @@
 # RotationEngine — DFS Lineup Optimizer
 
+[![CI](https://github.com/CFlem900/dfs-lineup-optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/CFlem900/dfs-lineup-optimizer/actions/workflows/ci.yml)
+
 An NBA & College Basketball daily-fantasy lineup optimizer. It ingests injury news, player stats, Vegas odds, and expert signals; projects every player's fantasy output for tonight's DraftKings slate; and generates optimally-diverse tournament lineups with **integer linear programming** (PuLP/CBC). On game day it runs autonomously: a background pipeline polls for injury updates every two minutes before lock, auto-patches saved lineups when a star is scratched, and exports DraftKings-ready CSVs.
 
 > Personal research project, published as a portfolio piece. All credentials and generated data are excluded; `.env.example` files document configuration.

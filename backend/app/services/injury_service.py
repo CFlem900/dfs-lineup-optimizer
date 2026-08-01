@@ -102,6 +102,15 @@ OFFICIAL_FACTORS: Dict[str, float] = {
         * INJURY_MINUTES_IF_ACTIVE.get("Questionable", 0.95),
         2,
     ),  # 0.81
+    # "Probable" was missing from this table even though the constants
+    # define it — so probable players fell through to the Questionable
+    # default in get_official_factor() while _normalise_status() mapped
+    # them to Available (1.00).  Same report, two different factors.
+    "Probable": round(
+        INJURY_PLAY_PROBABILITY.get("Probable", 0.95)
+        * INJURY_MINUTES_IF_ACTIVE.get("Probable", 0.98),
+        2,
+    ),  # 0.93
     "Available": 1.00,
 }
 
@@ -1497,7 +1506,7 @@ class InjuryService:
             "game time decision": "GTD",
             "day-to-day": "GTD",
             "day to day": "GTD",
-            "probable": "Available",
+            "probable": "Probable",
             "available": "Available",
             "not yet submitted": "Questionable",
         }

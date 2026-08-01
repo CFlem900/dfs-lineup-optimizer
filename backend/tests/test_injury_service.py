@@ -263,6 +263,7 @@ class TestPublicInterfaceUnchanged:
         assert InjuryService.get_official_factor("Doubtful") == 0.15
         assert InjuryService.get_official_factor("GTD") == 0.54
         assert InjuryService.get_official_factor("Questionable") == 0.64
+        assert InjuryService.get_official_factor("Probable") == 0.93
         assert InjuryService.get_official_factor("Available") == 1.00
 
     def test_get_official_factor_unknown_defaults_to_questionable(self):
@@ -336,16 +337,26 @@ class TestNormaliseStatus:
 
     def test_normalise_available(self):
         assert InjuryService._normalise_status("Available") == "Available"
-        assert InjuryService._normalise_status("Probable") == "Available"
+
+    def test_normalise_probable_is_distinct(self):
+        """Probable is a first-class status (factor 0.93), not Available.
+
+        _normalise_status used to map probable → Available while
+        _parse_status_text returned "Probable" (absent from
+        OFFICIAL_FACTORS) — the same report could produce factor 1.00
+        or the Questionable fallback depending on the code path.
+        Both helpers now agree.
+        """
+        assert InjuryService._normalise_status("Probable") == "Probable"
 
     def test_normalise_unknown_defaults_to_questionable(self):
         assert InjuryService._normalise_status("SomeRandomStatus") == "Questionable"
 
     def test_parse_expected_to_play(self):
-        assert InjuryService._parse_status_text("Expected to play tonight") == "Available"
+        assert InjuryService._parse_status_text("Expected to play tonight") == "Probable"
 
     def test_parse_probable(self):
-        assert InjuryService._parse_status_text("Probable (Knee)") == "Available"
+        assert InjuryService._parse_status_text("Probable (Knee)") == "Probable"
 
     def test_parse_day_to_day(self):
         assert InjuryService._parse_status_text("Day To Day (Back)") == "GTD"
@@ -467,6 +478,9 @@ class TestOfficialFactors:
     def test_questionable_is_064(self):
         assert OFFICIAL_FACTORS["Questionable"] == 0.64
 
+    def test_probable_is_093(self):
+        assert OFFICIAL_FACTORS["Probable"] == 0.93
+
     def test_game_time_decision_matches_gtd(self):
         assert OFFICIAL_FACTORS["Game Time Decision"] == OFFICIAL_FACTORS["GTD"]
 
@@ -475,7 +489,8 @@ class TestOfficialFactors:
         assert OFFICIAL_FACTORS["Out"] < OFFICIAL_FACTORS["Doubtful"]
         assert OFFICIAL_FACTORS["Doubtful"] < OFFICIAL_FACTORS["GTD"]
         assert OFFICIAL_FACTORS["GTD"] < OFFICIAL_FACTORS["Questionable"]
-        assert OFFICIAL_FACTORS["Questionable"] < OFFICIAL_FACTORS["Available"]
+        assert OFFICIAL_FACTORS["Questionable"] < OFFICIAL_FACTORS["Probable"]
+        assert OFFICIAL_FACTORS["Probable"] < OFFICIAL_FACTORS["Available"]
 
 
 # ── BDL Team Mapping Tests ──────────────────────────────────────────

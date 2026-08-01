@@ -39,8 +39,6 @@ jobs:
           --deselect "tests/test_game_service.py::TestGameServiceBDLIntegration::test_has_game_on_date_no_data_service"
           --deselect "tests/test_hierarchical_dag.py::TestHierarchicalRedistribution::test_no_candidates_overflow_carries"
           --deselect "tests/test_http_resilience.py::TestResilientGet::test_exhausts_retries_on_persistent_timeout"
-          --deselect "tests/test_injury_service.py::TestNormaliseStatus::test_parse_expected_to_play"
-          --deselect "tests/test_injury_service.py::TestNormaliseStatus::test_parse_probable"
           --deselect "tests/test_nba_api_service.py::TestTradeDetection::test_trade_detection_graceful_when_static_lookup_fails"
           --deselect "tests/test_portfolio_ilp.py::TestPortfolioILPConstants::test_ilp_constants_importable"
           --deselect "tests/test_pre_lock_polling.py::TestGetStatus::test_status_has_expected_keys"

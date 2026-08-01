@@ -15778,7 +15778,7 @@ class LineupOptimizerService:
 
             pool: Enriched player pool (from ``build_player_pool`` +
                 ``_enrich_pool``).  Projections should reflect the latest
-                InjurySyncService data.
+                InjuryService data.
             game_states: Dict mapping team abbreviation (BDL canonical)
                 to ``GameState`` objects from ``LiveGameStateService``.
             platform: "dk" or "fd".

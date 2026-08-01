@@ -692,19 +692,19 @@ class NBATeamStats(Base):
 
 
 class NBAInjury(Base):
-    """Persisted NBA injury report synced from the official NBA.com PDF.
+    """Persisted NBA injury report synced from the BALLDONTLIE API.
 
-    Populated by ``InjurySyncService.run_sync()`` and
-    ``InjuryService.sync_injuries()`` using the ``nbainjuries`` library.
-    Serves as the source of truth for the downstream Monte Carlo
-    simulator that redistributes player minutes under a strict 240-minute
-    team total constraint.
+    Populated by ``InjuryService.sync_injuries()`` (the BDL-powered
+    pipeline that replaced the NBA.com-PDF scrape and the former
+    ``InjurySyncService``).  Serves as the source of truth for the
+    downstream Monte Carlo simulator that redistributes player minutes
+    under a strict 240-minute team total constraint.
 
     Uses ``player_name`` as the natural primary key — each player appears
     at most once.  Subsequent syncs upsert (INSERT … ON CONFLICT UPDATE)
     to refresh status/reason without creating duplicates.
 
-    Extended columns (added by InjurySyncService):
+    Extended columns (added by the sync pipeline):
         team_id            — NBA team ID (int FK) for fast joins
         official_status    — raw status string from the NBA report
         effective_factor   — 0.00–1.00 minutes factor (includes DNP decay)

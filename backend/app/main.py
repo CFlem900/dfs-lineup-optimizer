@@ -306,11 +306,14 @@ async def lifespan(app: FastAPI):
                 built with an empty injury list.
                 """
                 try:
-                    from app.db.database import async_session_factory
-                    from app.services.injury_sync_service import (
-                        InjurySyncService,
-                    )
+                    import asyncio
 
+                    from app.db.database import async_session_factory
+                    from app.services.injury_service import InjuryService
+
+                    # async_session_factory is None exactly when
+                    # DATABASE_URL is unset — sync_injuries() itself uses
+                    # its own psycopg2 connection, not this factory.
                     if async_session_factory is None:
                         logger.warning(
                             "[Scheduler] Injury sync skipped — "
@@ -324,11 +327,12 @@ async def lifespan(app: FastAPI):
                         cache_svc = getattr(svc, "cache_service", None)
                     except Exception:
                         cache_svc = None
-                    sync_svc = InjurySyncService(cache_service=cache_svc)
+                    sync_svc = InjuryService(cache_service=cache_svc)
 
-                    async with async_session_factory() as session:
-                        result = await sync_svc.run_sync(session)
-                        await session.commit()
+                    # sync_injuries is synchronous (psycopg2) — run it in
+                    # a worker thread, mirroring the proven pattern in
+                    # pre_lock_polling_service._poll_once.
+                    result = await asyncio.to_thread(sync_svc.sync_injuries)
 
                     upserted = result.get("upserted", 0)
                     changed = result.get("hash_changed", False)
@@ -472,7 +476,7 @@ async def lifespan(app: FastAPI):
 
     # ── Start Redis Pub/Sub pre-warm subscriber ──────────────────────
     # Listens for star-player injury changes published by
-    # InjurySyncService and proactively rebuilds the affected slate's
+    # InjuryService and proactively rebuilds the affected slate's
     # player pool before any user requests.
     if svc and cache_service.is_connected and _is_scheduler_worker:
         try:

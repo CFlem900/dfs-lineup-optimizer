@@ -750,7 +750,7 @@ def late_swap(
     prevents false locks during broadcast holds or arena delays.
 
     Locked slots are preserved; open slots are re-optimized via the
-    CBC ILP solver using updated projections from InjurySyncService.
+    CBC ILP solver using updated projections from InjuryService.
 
     Falls back to legacy greedy 1-for-1 replacement when BDL is
     unavailable, ``use_ilp=False``, or the ILP solver fails.

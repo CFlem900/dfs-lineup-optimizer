@@ -1,7 +1,7 @@
 """Background Redis Pub/Sub subscriber for proactive cache pre-warming.
 
 Listens to the ``rotation_engine_updates`` channel published by
-``InjurySyncService`` whenever a star player's injury status changes.
+``InjuryService`` whenever a star player's injury status changes.
 On receipt, identifies the affected DK slate(s) and triggers
 ``LineupOptimizerService.build_player_pool()`` to rebuild the cache
 *before* any user requests — saving 30-90 seconds of cold-build time.
@@ -9,8 +9,8 @@ On receipt, identifies the affected DK slate(s) and triggers
 Architecture:
 
     ┌────────────────────┐   PUBLISH    ┌───────────────────────┐
-    │ InjurySyncService  │ ──────────►  │ prewarm_subscriber    │
-    │ (run_sync Step 9)  │   Redis Ch.  │ (daemon thread/worker)│
+    │ InjuryService      │ ──────────►  │ prewarm_subscriber    │
+    │ (sync Step 9)      │   Redis Ch.  │ (daemon thread/worker)│
     └────────────────────┘              └───────────┬───────────┘
                                                     │
                                         build_player_pool(slate)
@@ -55,7 +55,7 @@ from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
-# Channel name — must match the publisher in injury_sync_service.py
+# Channel name — must match REDIS_PREWARM_CHANNEL in injury_service.py
 REDIS_PREWARM_CHANNEL = "rotation_engine_updates"
 
 # Timeout for a single build_player_pool() invocation (seconds).
